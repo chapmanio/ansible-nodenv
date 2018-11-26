@@ -1,0 +1,77 @@
+---
+- name: Check for existing nodenv
+  stat: path="{{ nodenv_root }}"
+  register: nodenv_exists
+
+- name: Clone nodenv repo
+  git:
+    repo: https://github.com/nodenv/nodenv.git
+    dest: "{{ nodenv_root }}"
+
+- name: Set group permissions
+  file:
+    path: "{{ nodenv_root }}"
+    group: webdev
+    mode: g+ws
+    recurse: yes
+
+- name: Create nodenv profile script
+  template:
+    src: nodenv.sh.j2
+    dest: /etc/profile.d/nodenv.sh
+    owner: root
+    group: webdev
+    mode: 0644
+
+- name: Clone node-build repo
+  git:
+    repo: https://github.com/nodenv/node-build.git
+    dest: "{{ nodenv_root }}/plugins/node-build"
+
+- name: Clone nodenv-update repo
+  git:
+    repo: https://github.com/nodenv/nodenv-update.git
+    dest: "{{ nodenv_root }}/plugins/nodenv-update"
+
+- name: Update nodenv
+  command: "nodenv update"
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"
+
+- name: Check if nodeJS versions are installed
+  stat: path="{{ nodenv_root }}/versions/{{ item }}"
+  with_items: "{{ node_versions }}"
+  register: node_installed
+
+- name: Install nodeJS versions
+  become: true
+  command: "nodenv install {{ item.item }}"
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"
+  with_items: "{{ node_installed.results }}"
+  when: not item.stat.exists
+
+- name: Install NPM packages
+  include_tasks: install-npm.yml
+  with_items: "{{ node_versions }}"
+  loop_control:
+    loop_var: node_version
+
+- name: Set global nodeJS version
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"
+  command: "nodenv global {{ node_default }}"
+
+- name: Clone nodenv-package-rehash repo
+  git:
+    repo: https://github.com/nodenv/nodenv-package-rehash.git
+    dest: "{{ nodenv_root }}/plugins/nodenv-package-rehash"
+
+- name: Install nodenv package hooks
+  command: "nodenv package-hooks install --all"
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"

@@ -1,0 +1,13 @@
+---
+nodenv_root: /usr/local/lib/nodenv
+nodenv_path: "{{ nodenv_root }}/shims:{{ nodenv_root }}/bin:{{ ansible_env.PATH }}"
+
+node_versions:
+  - "7.6.0"
+
+node_default: "7.6.0"
+
+npm_defaults:
+  - "grunt-cli"
+  - "gulp-cli"
+  - "bower"

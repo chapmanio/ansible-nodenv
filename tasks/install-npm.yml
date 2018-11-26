@@ -1,0 +1,18 @@
+- name: NodeJS version
+  debug:
+    msg: "{{node_version}}"
+
+- name: Set nodejs version
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"
+  command: "nodenv global {{ node_version }}"
+
+- name: Install global NPM packages
+  environment:
+    NODENV_ROOT: "{{ nodenv_root }}"
+    PATH: "{{ nodenv_path }}"
+  npm:
+    name: "{{ item }}"
+    global: yes
+  with_items: "{{ npm_defaults }}"
